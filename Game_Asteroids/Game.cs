@@ -21,6 +21,11 @@ namespace Game_Asteroids
         public static int Width { get; set; }
         public static int Height { get; set; }
 
+        // frames per second
+        static int lastTickMilliseconds = 0;
+        static int lastFPS = 0;
+        static int frames = 0;
+
         /// <summary>
         /// Initialize graphics components
         /// </summary>
@@ -49,7 +54,7 @@ namespace Game_Asteroids
 
             // timer for game loop
             Timer timer = new Timer();
-            timer.Interval = 100;
+            timer.Interval = 50;
             timer.Start();
             timer.Tick += Timer_Tick;
         }
@@ -105,14 +110,28 @@ namespace Game_Asteroids
         /// </summary>
         public static void Draw()
         {
-            // test graphics
+            // background
             buffer.Graphics.Clear(Color.Black);
 
             // draw objects
             foreach (var obj in objectsList)
                 obj.Draw();
 
+            // draw bullet
             bullet.Draw();
+
+            // frames accumulating
+            frames++;
+            // until 1 second - draw old FPS, else - draw new FPS
+            if (Environment.TickCount - lastTickMilliseconds < 1000)
+                buffer.Graphics.DrawString("FPS: " + lastFPS, new Font("Arial", 12), Brushes.Aqua, 5, 5);
+            else
+            {
+                buffer.Graphics.DrawString("FPS: " + frames, new Font("Arial", 12), Brushes.Aqua, 5, 5);
+                lastFPS = frames;
+                frames = 0;
+                lastTickMilliseconds = Environment.TickCount;
+            }
 
             // write from buffer to form
             buffer.Render();
@@ -142,6 +161,7 @@ namespace Game_Asteroids
                     bullet.X = 0;
                 }
             }
+
         }
     }
 
