@@ -201,7 +201,7 @@ namespace Game_Asteroids
             position.X += direction.X;
 
             // bouncing object
-            if (position.X <= 0 || position.X >= Game.Width - size.Width) direction.X = -direction.X;
+            if (position.X <= 0 || position.X >= Game.Width - size.Width) direction.X = -1 * direction.X;
         }
     }
 
@@ -246,6 +246,8 @@ namespace Game_Asteroids
     /// </summary>
     class Asteroid : BaseObject
     {
+        private Rectangle drawRectangle;
+
         public int Power { get; set; }
 
         /// <summary>
@@ -256,7 +258,7 @@ namespace Game_Asteroids
             get { return position; }
             set { position = value; }
         }
-        Rectangle drawRectangle;
+        
         public Rectangle CollisionRectangle
         {
             get { return drawRectangle; }
@@ -287,8 +289,8 @@ namespace Game_Asteroids
             position.X += direction.X;
             position.Y += direction.Y;
 
-            if (position.X <= 0 || position.X >= Game.Width - size.Width) direction.X = -direction.X;
-            if (position.Y <= 0 || position.Y >= Game.Height - size.Height) direction.Y = -direction.Y;
+            if (position.X <= 0 || position.X >= Game.Width - size.Width) direction.X = -1 * direction.X;
+            if (position.Y <= 0 || position.Y >= Game.Height - size.Height) direction.Y = -1 * direction.Y;
 
             drawRectangle.X = position.X;
             drawRectangle.Y = position.Y;
