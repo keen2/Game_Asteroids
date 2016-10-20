@@ -165,6 +165,9 @@ namespace Game_Asteroids
                     // ...set Asteroid's x value to right bound and bullet's x value to left bound
                     asteroid.Position = new Point(WindowWidth - asteroid.Width, asteroid.Position.Y);
                     bullet.X = 0;
+
+                    // play sound
+                    System.Media.SystemSounds.Beep.Play();
                 }
             }
 
