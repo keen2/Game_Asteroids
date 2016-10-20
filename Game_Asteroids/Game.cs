@@ -291,7 +291,7 @@ namespace Game_Asteroids
     /// <summary>
     /// Class of asteroids inherited from BaseObject
     /// </summary>
-    class Asteroid : BaseObject
+    class Asteroid : BaseObject, IComparable<Asteroid>
     {
         /// <summary>
         /// Shots to destroy
@@ -334,6 +334,16 @@ namespace Game_Asteroids
             if (position.X <= 0 || position.X >= Game.WindowWidth - size.Width) direction.X = -1 * direction.X;
             if (position.Y <= 0 || position.Y >= Game.WindowHeight - size.Height) direction.Y = -1 * direction.Y;
 
+        }
+
+        int IComparable<Asteroid>.CompareTo(Asteroid obj)
+        {
+            if (Power > obj.Power)
+                return 1;
+            else if (Power < obj.Power)
+                return 1;
+            else
+                return 0;
         }
     }
 
