@@ -33,6 +33,9 @@ namespace Game_Asteroids
         static int lastFPS = 0;
         static int frames = 0;
 
+        // random generator
+        public static Random rnd = new Random();
+
         /// <summary>
         /// Initialize graphics components
         /// </summary>
@@ -86,16 +89,16 @@ namespace Game_Asteroids
             // load objects
             for (int i = 0; i < objectsCount; i++)
             {
-                newObjSize = rnd.Next(4, 8);
+                newObjSize = rnd.Next(4, 7);
 
                 // polymorphism: put Asteroid to List<BaseObject>
                 objectsList.Add(new Asteroid(new Point(rnd.Next(WindowWidth), i * 20),
                     new Point(rnd.Next(directionMin, directionMax), rnd.Next(directionMin, directionMax)),
-                    new Size(newObjSize * 2, newObjSize * 2)));
+                    new Size(newObjSize * 3, newObjSize * 3)));
 
                 // polymorphism: put Star to List<BaseObject>
                 objectsList.Add(new Star(new Point(rnd.Next(WindowWidth), i * 20),
-                    new Point(rnd.Next(directionMin, directionMax), 0),
+                    new Point(rnd.Next(directionMin / 2, directionMax / 2), 0),
                     new Size(newObjSize, newObjSize)));
 
                 // set random magnitude and radial direction of Vector2(rndX, rndY)
@@ -290,7 +293,10 @@ namespace Game_Asteroids
     /// </summary>
     class Asteroid : BaseObject
     {
-        public int Power { get; set; }
+        /// <summary>
+        /// Shots to destroy
+        /// </summary>
+        public int Power { get; set; } = 3;     // default value
         public int Width { get { return size.Width; } }
 
         /// <summary>
@@ -305,7 +311,7 @@ namespace Game_Asteroids
         public Asteroid(Point position, Point direction, Size size)
             : base(position, direction, size)
         {
-            Power = 1;
+            Power = Game.rnd.Next(1, 4);    // 1..3 shots to destroy
         }
 
         /// <summary>
