@@ -22,7 +22,7 @@ namespace Game_Asteroids
 
         // list of objects
         static List<BaseObject> objectsList = new List<BaseObject>();
-        static Bullet bullet;
+        static List<Bullet> bulletsList=new List<Bullet>();
         static Ship ship;
 
         // game window resolution
@@ -63,6 +63,9 @@ namespace Game_Asteroids
             // load objects
             Load();
 
+            //
+            form.KeyDown += Form_KeyDown;
+
             // timer for game loop
             Timer timer = new Timer();
             timer.Interval = 50;
@@ -70,6 +73,32 @@ namespace Game_Asteroids
             timer.Tick += Timer_Tick;
         }
 
+        private static void Form_KeyDown(object sender, KeyEventArgs e)
+        {
+            // spawn a bullet
+            switch (e.KeyCode)
+            {
+                case Keys.Space:
+                    bulletsList.Add(new Bullet(
+                                        new Point(ship.CollisionRectangle.Right,
+                                                ship.CollisionRectangle.Top + ship.CollisionRectangle.Height / 2),
+                                        new Point(15, 0),
+                                        new Size(4, 1)));
+                    break;
+                case Keys.Up:
+                    ship.Up();
+                    break;
+                case Keys.Down:
+                    ship.Down();
+                    break;
+            }
+        }
+
+        /// <summary>
+        /// Realize game loop at every tick
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private static void Timer_Tick(object sender, EventArgs e)
         {
             Update();
@@ -111,12 +140,8 @@ namespace Game_Asteroids
                     new Size(2, 2)));
             }
 
-            // load one bullet
-            //objectsList.Add(new Bullet(new Point(0, 200), new Point(5, 0), new Size(4, 1)));
-            bullet = new Bullet(new Point(0, 200), new Point(5, 0), new Size(4, 1));
-
             // load a ship
-            ship = new Ship(new Point(20, 200), new Point(1, 1), new Size(30, 15));
+            ship = new Ship(new Point(10, Game.WindowHeight / 2), new Point(10, 10), new Size(30, 20));
         }
 
         /// <summary>
@@ -131,8 +156,9 @@ namespace Game_Asteroids
             foreach (var obj in objectsList)
                 obj.Draw();
 
-            // draw bullet
-            bullet.Draw();
+            // draw bullets
+            foreach (var bullet in bulletsList)
+                bullet.Draw();
 
             // draw ship
             ship.Draw();
@@ -163,26 +189,41 @@ namespace Game_Asteroids
             foreach (var obj in objectsList)
                 obj.Update();
 
-            bullet.Update();
+            // update bullets
+            foreach (var bullet in bulletsList)
+                bullet.Update();
 
             ship.Update();
 
             //collision resolution between bullet and Asteroid
             foreach (var obj in objectsList)
             {
-                // pick up Asteroid from BaseObject list and if collision occurs...
-                if (obj is Asteroid && (obj as Asteroid).CollisionWith(bullet))
+                if (obj is Asteroid)
                 {
                     Asteroid asteroid = obj as Asteroid;
-                    // ...set Asteroid's x value to right bound and bullet's x value to left bound
-                    asteroid.Position = new Point(WindowWidth - asteroid.Width, asteroid.Position.Y);
-                    bullet.X = 0;
 
-                    // play sound
-                    System.Media.SystemSounds.Beep.Play();
+                    foreach (var bullet in bulletsList)
+                    {
+                        // pick up Asteroid from BaseObject list and if collision occurs...
+                        if (asteroid.CollisionWith(bullet))
+                        {
+                            // ...set Asteroid's x value to right bound and bullet's x value to left bound
+                            asteroid.Position = new Point(WindowWidth - asteroid.Width, asteroid.Position.Y);
+                            bullet.Active = false;
+
+                            // play sound
+                            System.Media.SystemSounds.Beep.Play();
+                        }
+                    }
                 }
             }
 
+            // clean inactive bullets
+            for (int i = bulletsList.Count - 1; i >= 0; i--)
+            {
+                if (!bulletsList[i].Active)
+                    bulletsList.RemoveAt(i);
+            }
         }
     }
 
@@ -368,6 +409,7 @@ namespace Game_Asteroids
         {
             set { position.X = value; }
         }
+        public bool Active { get; set; } = true;
 
         public Bullet(Point position, Point direction, Size size)
             : base(position, direction, size)
@@ -390,7 +432,7 @@ namespace Game_Asteroids
         {
             position.X += direction.X;
 
-            if (position.X <= 0 || position.X >= Game.WindowWidth - size.Width) position.X = 0;
+            if (position.X > Game.WindowWidth) Active = false;
         }
     }
 
