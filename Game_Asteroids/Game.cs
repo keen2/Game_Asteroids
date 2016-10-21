@@ -23,6 +23,7 @@ namespace Game_Asteroids
         // list of objects
         static List<BaseObject> objectsList = new List<BaseObject>();
         static Bullet bullet;
+        static Ship ship;
 
         // game window resolution
         public static int WindowWidth { get; set; }
@@ -113,6 +114,9 @@ namespace Game_Asteroids
             // load one bullet
             //objectsList.Add(new Bullet(new Point(0, 200), new Point(5, 0), new Size(4, 1)));
             bullet = new Bullet(new Point(0, 200), new Point(5, 0), new Size(4, 1));
+
+            // load a ship
+            ship = new Ship(new Point(20, 200), new Point(1, 1), new Size(30, 15));
         }
 
         /// <summary>
@@ -129,6 +133,9 @@ namespace Game_Asteroids
 
             // draw bullet
             bullet.Draw();
+
+            // draw ship
+            ship.Draw();
 
             // frames accumulating
             frames++;
@@ -157,6 +164,8 @@ namespace Game_Asteroids
                 obj.Update();
 
             bullet.Update();
+
+            ship.Update();
 
             //collision resolution between bullet and Asteroid
             foreach (var obj in objectsList)
@@ -382,6 +391,50 @@ namespace Game_Asteroids
             position.X += direction.X;
 
             if (position.X <= 0 || position.X >= Game.WindowWidth - size.Width) position.X = 0;
+        }
+    }
+
+    /// <summary>
+    /// Class of ship inherited from BaseObject
+    /// </summary>
+    class Ship : BaseObject
+    {
+        int energy = 100;
+        public int Energy { get { return energy; } }
+
+        public Ship(Point position, Point direction, Size size)
+            : base(position,direction,size)
+        {
+        }
+
+        public void EnergyLower(int n)
+        {
+            energy -= n;
+        }
+        public void Up()
+        {
+            if (position.Y > 0) position.Y -= direction.Y;
+        }
+        public void Down()
+        {
+            if (position.Y < Game.WindowHeight) position.Y += direction.Y;
+        }
+        public void Death()
+        {
+        }
+
+        /// <summary>
+        /// Draw ship
+        /// </summary>
+        public override void Draw()
+        {
+            Game.buffer.Graphics.FillEllipse(Brushes.Wheat, position.X, position.Y, size.Width, size.Height);
+        }
+        /// <summary>
+        /// Update ship location
+        /// </summary>
+        public override void Update()
+        {
         }
     }
 }
