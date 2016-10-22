@@ -45,6 +45,9 @@ namespace Game_Asteroids
         // random generator
         public static Random rnd = new Random();
 
+        // ship sprite
+        public static Image shipSprite;
+
         /// <summary>
         /// Initialize graphics components
         /// </summary>
@@ -150,8 +153,9 @@ namespace Game_Asteroids
                     new Size(2, 2)));
             }
 
-            // load a ship
-            ship = new Ship(new Point(10, Game.WindowHeight / 2), new Point(0, 20), new Size(30, 20));
+            // load a ship: create instance and load random resource image
+            ship = new Ship(new Point(10, Game.WindowHeight / 2), new Point(0, 20), new Size(50, 35));
+            shipSprite = Properties.Resources.ResourceManager.GetObject("ship" + Game.rnd.Next(1, 6)) as Image;
         }
 
         /// <summary>
@@ -545,7 +549,7 @@ namespace Game_Asteroids
         /// </summary>
         public override void Draw()
         {
-            Game.buffer.Graphics.FillEllipse(Brushes.Wheat, position.X, position.Y, size.Width, size.Height);
+            Game.buffer.Graphics.DrawImage(Game.shipSprite, new Rectangle(position.X, position.Y, size.Width, size.Height));
         }
         /// <summary>
         /// Update ship location
