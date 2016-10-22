@@ -34,6 +34,9 @@ namespace Game_Asteroids
         public static int WindowWidth { get; set; }
         public static int WindowHeight { get; set; }
 
+        // timer for game loop
+        static Timer timer = new Timer();
+
         // frames per second
         static int lastTickMilliseconds = 0;
         static int lastFPS = 0;
@@ -68,11 +71,13 @@ namespace Game_Asteroids
             // load objects
             Load();
 
+            // add Finish() method to event MessageDeath
+            ship.MessageDeath += Finish;
+
             //
             form.KeyDown += Form_KeyDown;
 
-            // timer for game loop
-            Timer timer = new Timer();
+            // start timer for game loop
             timer.Interval = 50;
             timer.Start();
             timer.Tick += Timer_Tick;
@@ -107,7 +112,9 @@ namespace Game_Asteroids
         private static void Timer_Tick(object sender, EventArgs e)
         {
             Update();
-            Draw();
+            // if the ship alive and timer isn't stopped
+            if (timer.Enabled)
+                Draw();
         }
 
         /// <summary>
@@ -125,7 +132,7 @@ namespace Game_Asteroids
 
                 // polymorphism: put Asteroid to List<BaseObject>
                 objectsList.Add(new Asteroid(new Point(rnd.Next(asteroidsOffset, WindowWidth), i * 20),
-                    new Point(rnd.Next(directionMin / 2, directionMax / 2), rnd.Next(directionMin / 2, directionMax / 2)),
+                    new Point(rnd.Next(directionMin / 2, directionMax), rnd.Next(directionMin / 2, directionMax)),
                     new Size(newObjSize * 3, newObjSize * 3)));
 
                 // polymorphism: put Star to List<BaseObject>
@@ -167,7 +174,8 @@ namespace Game_Asteroids
             ship.Draw();
 
             // draw ship energy
-            buffer.Graphics.DrawString("Energy: " + ship.Energy, SystemFonts.DefaultFont, Brushes.Yellow, 0, 0);
+            buffer.Graphics.DrawString("Energy: " + ship.Energy,
+                new Font(FontFamily.GenericSansSerif, 12, FontStyle.Bold), Brushes.Yellow, 0, 0);
 
             // frames accumulating
             frames++;
@@ -226,9 +234,12 @@ namespace Game_Asteroids
                     //collision resolution between ship and Asteroid
                     if (ship.CollisionWith(asteroid))
                     {
-                        ship.EnergyLower(rnd.Next(1, 10));
                         System.Media.SystemSounds.Asterisk.Play();
-                        if (ship.Energy <= 0) ship.Death();
+
+                        ship.EnergyLower(rnd.Next(1, 6));
+                        
+                        if (ship.Energy <= 0)
+                            ship.Death();   // call ship.MessageDeath
                     }
                 }
             }
@@ -240,6 +251,37 @@ namespace Game_Asteroids
                     bulletsList.RemoveAt(i);
             }
         }
+
+        /// <summary>
+        /// Freeze screen and draw string "Game Over"
+        /// </summary>
+        public static void Finish()
+        {
+            timer.Stop();
+
+            // clean ship energy value
+            float energyValueWidth = TextRenderer.MeasureText("0", new Font(FontFamily.GenericSansSerif, 12, FontStyle.Bold)).Width;
+            Size energyTextSize = TextRenderer.MeasureText(
+                                        "Energy: " + ship.Energy,
+                                        new Font(FontFamily.GenericSansSerif, 12, FontStyle.Bold));
+            buffer.Graphics.FillRectangle(Brushes.Black,
+                                            energyTextSize.Width - energyValueWidth, 0,
+                                            energyTextSize.Width, energyTextSize.Height);
+            buffer.Render();
+
+            // update screen at the end: draw energy value and string "Game Over" at the center
+            buffer.Graphics.DrawString("Energy: " + ship.Energy,
+                new Font(FontFamily.GenericSansSerif, 12, FontStyle.Bold), Brushes.Yellow, 0, 0);
+            Size GameOverTextSize = TextRenderer.MeasureText(
+                                        "Game Over",
+                                        new Font(FontFamily.GenericSansSerif, 60, FontStyle.Underline));
+            buffer.Graphics.DrawString("Game Over",
+                new Font(FontFamily.GenericSansSerif, 60, FontStyle.Underline),
+                Brushes.Crimson,
+                WindowWidth / 2 - GameOverTextSize.Width / 2,
+                WindowHeight / 2 - GameOverTextSize.Height / 2);
+            buffer.Render();
+        }
     }
 
     /// <summary>
@@ -247,6 +289,9 @@ namespace Game_Asteroids
     /// </summary>
     abstract class BaseObject : ICollision
     {
+        // delegate for messages
+        public delegate void MyMessage();
+
         protected Point position;
         protected Point direction;
         protected Size size;
@@ -455,6 +500,9 @@ namespace Game_Asteroids
     /// </summary>
     class Ship : BaseObject
     {
+        // event of delegate type BaseObject.Message
+        public event MyMessage MessageDeath;
+
         int energy = 100;
 
         /// <summary>
@@ -487,6 +535,9 @@ namespace Game_Asteroids
         /// </summary>
         public void Death()
         {
+            energy = 0;
+            // call event
+            if (MessageDeath != null) MessageDeath();
         }
 
         /// <summary>
