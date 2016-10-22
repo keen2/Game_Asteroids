@@ -52,10 +52,10 @@ namespace Game_Asteroids
             graph = form.CreateGraphics();
 
             WindowWidth = form.Width - 2 * SystemInformation.BorderSize.Width
-                                - SystemInformation.HorizontalResizeBorderThickness;
+                                - 3 * SystemInformation.HorizontalResizeBorderThickness;
             WindowHeight = form.Height - SystemInformation.CaptionHeight
                                 - 2 * SystemInformation.BorderSize.Height
-                                - SystemInformation.VerticalResizeBorderThickness;
+                                - 3 * SystemInformation.VerticalResizeBorderThickness;
 
             // link buffer with graphical device to draw at buffer
             buffer = context.Allocate(graph, new Rectangle(0, 0, WindowWidth, WindowHeight));
@@ -163,14 +163,18 @@ namespace Game_Asteroids
             // draw ship
             ship.Draw();
 
+            // draw ship energy
+            buffer.Graphics.DrawString("Energy: " + ship.Energy, SystemFonts.DefaultFont, Brushes.Yellow, 0, 0);
+
             // frames accumulating
             frames++;
             // until 1 second - draw old FPS, else - draw new FPS
+            float textWidth = TextRenderer.MeasureText("FPS: " + lastFPS, new Font("Arial", 10)).Width;
             if (Environment.TickCount - lastTickMilliseconds < 1000)
-                buffer.Graphics.DrawString("FPS: " + lastFPS, new Font("Arial", 12), Brushes.Aqua, 5, 5);
+                buffer.Graphics.DrawString("FPS: " + lastFPS, new Font("Arial", 10), Brushes.Aqua, WindowWidth - textWidth, 5);
             else
             {
-                buffer.Graphics.DrawString("FPS: " + frames, new Font("Arial", 12), Brushes.Aqua, 5, 5);
+                buffer.Graphics.DrawString("FPS: " + frames, new Font("Arial", 10), Brushes.Aqua, WindowWidth - textWidth, 5);
                 lastFPS = frames;
                 frames = 0;
                 lastTickMilliseconds = Environment.TickCount;
@@ -205,7 +209,7 @@ namespace Game_Asteroids
                     foreach (var bullet in bulletsList)
                     {
                         // pick up Asteroid from BaseObject list and if collision occurs...
-                        if (asteroid.CollisionWith(bullet))
+                        if (bullet.CollisionWith(asteroid))
                         {
                             // ...set Asteroid's x value to right bound and bullet's x value to left bound
                             asteroid.Position = new Point(WindowWidth - asteroid.Width, asteroid.Position.Y);
@@ -214,6 +218,14 @@ namespace Game_Asteroids
                             // play sound
                             System.Media.SystemSounds.Beep.Play();
                         }
+                    }
+
+                    //collision resolution between ship and Asteroid
+                    if (ship.CollisionWith(asteroid))
+                    {
+                        ship.EnergyLower(rnd.Next(1, 10));
+                        System.Media.SystemSounds.Asterisk.Play();
+                        if (ship.Energy <= 0) ship.Death();
                     }
                 }
             }
@@ -442,6 +454,10 @@ namespace Game_Asteroids
     class Ship : BaseObject
     {
         int energy = 100;
+
+        /// <summary>
+        /// Health of the ship
+        /// </summary>
         public int Energy { get { return energy; } }
 
         public Ship(Point position, Point direction, Size size)
@@ -461,6 +477,10 @@ namespace Game_Asteroids
         {
             if (position.Y < Game.WindowHeight) position.Y += direction.Y;
         }
+
+        /// <summary>
+        /// Destroying the ship
+        /// </summary>
         public void Death()
         {
         }
