@@ -20,10 +20,15 @@ namespace Game_Asteroids
         static BufferedGraphicsContext context;
         public static BufferedGraphics buffer;
 
-        // list of objects
+        // lists of objects
         static List<BaseObject> objectsList = new List<BaseObject>();
         static List<Bullet> bulletsList=new List<Bullet>();
         static Ship ship;
+
+        // game constants
+        const int asteroidsOffset = 150; // to not damage the ship at start
+        public const int directionMin = -5;    // min "speed" at 2D space
+        public const int directionMax = 5;
 
         // game window resolution
         public static int WindowWidth { get; set; }
@@ -82,7 +87,7 @@ namespace Game_Asteroids
                     bulletsList.Add(new Bullet(
                                         new Point(ship.CollisionRectangle.Right,
                                                 ship.CollisionRectangle.Top + ship.CollisionRectangle.Height / 2),
-                                        new Point(15, 0),
+                                        new Point(25, 0),
                                         new Size(4, 1)));
                     break;
                 case Keys.Up:
@@ -110,38 +115,36 @@ namespace Game_Asteroids
         /// </summary>
         public static void Load()
         {
-            Random rnd = new Random();
             int newObjSize;     // dimension of object
-            const int directionMin = -5;    // min "speed" at 2D space
-            const int directionMax = 5;
             int objectsCount = 30;
 
             // load objects
             for (int i = 0; i < objectsCount; i++)
             {
-                newObjSize = rnd.Next(4, 7);
+                newObjSize = rnd.Next(3, 8);
 
                 // polymorphism: put Asteroid to List<BaseObject>
-                objectsList.Add(new Asteroid(new Point(rnd.Next(WindowWidth), i * 20),
-                    new Point(rnd.Next(directionMin, directionMax), rnd.Next(directionMin, directionMax)),
+                objectsList.Add(new Asteroid(new Point(rnd.Next(asteroidsOffset, WindowWidth), i * 20),
+                    new Point(rnd.Next(directionMin / 2, directionMax / 2), rnd.Next(directionMin / 2, directionMax / 2)),
                     new Size(newObjSize * 3, newObjSize * 3)));
 
                 // polymorphism: put Star to List<BaseObject>
                 objectsList.Add(new Star(new Point(rnd.Next(WindowWidth), i * 20),
-                    new Point(rnd.Next(directionMin / 2, directionMax / 2), 0),
+                    new Point(rnd.Next(directionMin / 2, 0), 0),
                     new Size(newObjSize, newObjSize)));
 
-                // set random magnitude and radial direction of Vector2(rndX, rndY)
-                int rndX = 3 * rnd.Next(directionMin, directionMax);
-                int rndY = (int)(rndX / Math.Tan(i * 2 * Math.PI / objectsCount));
+                // set random magnitude (and radial) direction of Vector2(rndX, rndY)
+                int rndX = -5 * rnd.Next(3, directionMax);
+                /*int rndY = (int)(rndX / Math.Tan(i * 2 * Math.PI / objectsCount));*/
+
                 // polymorphism: put Dot to List<BaseObject>
-                objectsList.Add(new Dot(new Point(Game.WindowWidth / 2, Game.WindowHeight / 2),
-                    new Point(rndX, rndY),
+                objectsList.Add(new Dot(new Point(rnd.Next(WindowWidth), i * 20),
+                    new Point(rndX, 0),
                     new Size(2, 2)));
             }
 
             // load a ship
-            ship = new Ship(new Point(10, Game.WindowHeight / 2), new Point(10, 10), new Size(30, 20));
+            ship = new Ship(new Point(10, Game.WindowHeight / 2), new Point(0, 20), new Size(30, 20));
         }
 
         /// <summary>
@@ -310,7 +313,7 @@ namespace Game_Asteroids
             position.X += direction.X;
 
             // bouncing object
-            if (position.X <= 0 || position.X >= Game.WindowWidth - size.Width) direction.X = -1 * direction.X;
+            if (position.X <= 0) position.X = Game.WindowWidth;
         }
     }
 
@@ -341,11 +344,10 @@ namespace Game_Asteroids
             position.X += direction.X;
             position.Y += direction.Y;
 
-            if (position.X <= 0 || position.X >= Game.WindowWidth - size.Width
-                || position.Y <= 0 || position.Y >= Game.WindowHeight - size.Height)
+            if (position.X <= 0)
             {
-                position.X = Game.WindowWidth / 2;
-                position.Y = Game.WindowHeight / 2;
+                position.X = Game.WindowWidth;
+                direction.X = -5 * Game.rnd.Next(3, Game.directionMax);
             }
         }
     }
@@ -471,11 +473,13 @@ namespace Game_Asteroids
         }
         public void Up()
         {
-            if (position.Y > 0) position.Y -= direction.Y;
+            if (position.Y > 0 && (position.Y - direction.Y) >= 0) position.Y -= direction.Y;
         }
         public void Down()
         {
-            if (position.Y < Game.WindowHeight) position.Y += direction.Y;
+            if (position.Y < Game.WindowHeight
+                                && (position.Y + direction.Y + size.Height) <= Game.WindowHeight)
+                position.Y += direction.Y;
         }
 
         /// <summary>
