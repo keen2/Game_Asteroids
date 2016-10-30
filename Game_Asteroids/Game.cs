@@ -29,6 +29,7 @@ namespace Game_Asteroids
         const int asteroidsOffset = 150; // to not damage the ship at start
         public const int directionMin = -5;    // min "speed" at 2D space
         public const int directionMax = 5;
+        const string EnergyStringPrefix = "Energy: ";
 
         // game window resolution
         public static int WindowWidth { get; set; }
@@ -47,6 +48,13 @@ namespace Game_Asteroids
 
         // ship sprite
         public static Image shipSprite;
+
+        // energy string (changes only on collision)
+        static string energyString;
+
+        // fonts
+        static Font energyFont;
+        static Font fpsFont;
 
         /// <summary>
         /// Initialize graphics components
@@ -77,7 +85,7 @@ namespace Game_Asteroids
             // add Finish() method to event MessageDeath
             ship.MessageDeath += Finish;
 
-            //
+            // catch Up and Down arrow keys
             form.KeyDown += Form_KeyDown;
 
             // start timer for game loop
@@ -88,22 +96,22 @@ namespace Game_Asteroids
 
         private static void Form_KeyDown(object sender, KeyEventArgs e)
         {
-            // spawn a bullet
-            switch (e.KeyCode)
+            if (e.KeyCode == Keys.Space)
             {
-                case Keys.Space:
-                    bulletsList.Add(new Bullet(
+                // spawn a bullet
+                bulletsList.Add(new Bullet(
                                         new Point(ship.CollisionRectangle.Right,
                                                 ship.CollisionRectangle.Top + ship.CollisionRectangle.Height / 2),
                                         new Point(25, 0),
                                         new Size(4, 1)));
-                    break;
-                case Keys.Up:
-                    ship.Up();
-                    break;
-                case Keys.Down:
-                    ship.Down();
-                    break;
+            }
+            else if (e.KeyCode == Keys.Up)
+            {
+                ship.Up();
+            }
+            else if (e.KeyCode == Keys.Down)
+            {
+                ship.Down();
             }
         }
 
@@ -153,9 +161,14 @@ namespace Game_Asteroids
                     new Size(2, 2)));
             }
 
-            // load a ship: create instance and load random resource image
-            ship = new Ship(new Point(10, Game.WindowHeight / 2), new Point(0, 20), new Size(50, 35));
+            // load a ship: create instance and load random resource image and initialize energyString
+            ship = new Ship(new Point(10, Game.WindowHeight / 2), new Point(0, 10), new Size(50, 35));
             shipSprite = Properties.Resources.ResourceManager.GetObject("ship" + Game.rnd.Next(1, 6)) as Image;
+            energyString = EnergyStringPrefix + ship.Energy;
+
+            // load fonts
+            fpsFont = new Font("Arial", 10);
+            energyFont = new Font(FontFamily.GenericSansSerif, 12, FontStyle.Bold);
         }
 
         /// <summary>
@@ -178,18 +191,17 @@ namespace Game_Asteroids
             ship.Draw();
 
             // draw ship energy
-            buffer.Graphics.DrawString("Energy: " + ship.Energy,
-                new Font(FontFamily.GenericSansSerif, 12, FontStyle.Bold), Brushes.Yellow, 0, 0);
+            buffer.Graphics.DrawString(energyString, energyFont, Brushes.Yellow, 0, 0);
 
             // frames accumulating
             frames++;
             // until 1 second - draw old FPS, else - draw new FPS
-            float textWidth = TextRenderer.MeasureText("FPS: " + lastFPS, new Font("Arial", 10)).Width;
+            float textWidth = TextRenderer.MeasureText("FPS: " + lastFPS, fpsFont).Width;
             if (Environment.TickCount - lastTickMilliseconds < 1000)
-                buffer.Graphics.DrawString("FPS: " + lastFPS, new Font("Arial", 10), Brushes.Aqua, WindowWidth - textWidth, 5);
+                buffer.Graphics.DrawString("FPS: " + lastFPS, fpsFont, Brushes.Aqua, WindowWidth - textWidth, 5);
             else
             {
-                buffer.Graphics.DrawString("FPS: " + frames, new Font("Arial", 10), Brushes.Aqua, WindowWidth - textWidth, 5);
+                buffer.Graphics.DrawString("FPS: " + frames, fpsFont, Brushes.Aqua, WindowWidth - textWidth, 5);
                 lastFPS = frames;
                 frames = 0;
                 lastTickMilliseconds = Environment.TickCount;
@@ -214,19 +226,20 @@ namespace Game_Asteroids
 
             ship.Update();
 
-            //collision resolution between bullet and Asteroid
+            //collisions resolution
             foreach (var obj in objectsList)
             {
                 if (obj is Asteroid)
                 {
                     Asteroid asteroid = obj as Asteroid;
 
-                    foreach (var bullet in bulletsList)
+                    // collision resolution between Asteroid and bullet
+                    foreach (Bullet bullet in bulletsList)
                     {
                         // pick up Asteroid from BaseObject list and if collision occurs...
                         if (bullet.CollisionWith(asteroid))
                         {
-                            // ...set Asteroid's x value to right bound and bullet's x value to left bound
+                            // ...set Asteroid's x value to right bound and bullet to inactive
                             asteroid.Position = new Point(WindowWidth - asteroid.Width, asteroid.Position.Y);
                             bullet.Active = false;
 
@@ -240,7 +253,9 @@ namespace Game_Asteroids
                     {
                         System.Media.SystemSounds.Asterisk.Play();
 
+                        // update ship energy and it's string
                         ship.EnergyLower(rnd.Next(1, 6));
+                        energyString = EnergyStringPrefix + ship.Energy;
                         
                         if (ship.Energy <= 0)
                             ship.Death();   // call ship.MessageDeath
@@ -264,20 +279,16 @@ namespace Game_Asteroids
             timer.Stop();
 
             // clean ship energy value
-            float energyValueWidth = TextRenderer.MeasureText("0", new Font(FontFamily.GenericSansSerif, 12, FontStyle.Bold)).Width;
-            Size energyTextSize = TextRenderer.MeasureText(
-                                        "Energy: " + ship.Energy,
-                                        new Font(FontFamily.GenericSansSerif, 12, FontStyle.Bold));
+            float energyValueWidth = TextRenderer.MeasureText("0", energyFont).Width;
+            Size energyTextSize = TextRenderer.MeasureText(energyString, energyFont);
             buffer.Graphics.FillRectangle(Brushes.Black,
                                             energyTextSize.Width - energyValueWidth, 0,
                                             energyTextSize.Width, energyTextSize.Height);
             buffer.Render();
 
             // update screen at the end: draw energy value and string "Game Over" at the center
-            buffer.Graphics.DrawString("Energy: " + ship.Energy,
-                new Font(FontFamily.GenericSansSerif, 12, FontStyle.Bold), Brushes.Yellow, 0, 0);
-            Size GameOverTextSize = TextRenderer.MeasureText(
-                                        "Game Over",
+            buffer.Graphics.DrawString(energyString, energyFont, Brushes.Yellow, 0, 0);
+            Size GameOverTextSize = TextRenderer.MeasureText("Game Over",
                                         new Font(FontFamily.GenericSansSerif, 60, FontStyle.Underline));
             buffer.Graphics.DrawString("Game Over",
                 new Font(FontFamily.GenericSansSerif, 60, FontStyle.Underline),
